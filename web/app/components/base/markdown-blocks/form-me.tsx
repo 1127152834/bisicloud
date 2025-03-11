@@ -6,16 +6,13 @@ import React, { useEffect, useState, useCallback } from 'react'
 import Button from '@/app/components/base/button'
 import Input from '@/app/components/base/input'
 import Textarea from '@/app/components/base/textarea'
-import DatePicker from '@/app/components/base/date-and-time-picker/date-picker'
-import TimePicker from '@/app/components/base/date-and-time-picker/time-picker'
-import Checkbox from '@/app/components/base/checkbox'
-import Select from '@/app/components/base/select'
 import { useChatContext } from '@/app/components/base/chat/chat/context'
 import cn from '@/utils/classnames'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { useTranslation } from 'react-i18next'
 import Switch from '@/app/components/base/switch'
 import Radio from '@/app/components/base/radio'
+import Checkbox from '@/app/components/base/checkbox'
 
 enum DATA_FORMAT {
   TEXT = 'text',
@@ -36,15 +33,372 @@ enum SUPPORTED_TYPES {
   PASSWORD = 'password',
   EMAIL = 'email',
   NUMBER = 'number',
-  DATE = 'date',
-  TIME = 'time',
-  DATETIME = 'datetime',
-  CHECKBOX = 'checkbox',
-  SELECT = 'select',
+  RANGE = 'range',
 }
+
+export type TagProps = {
+  tag: string
+  id: string
+  level: number
+  path: string[]
+  child_properties: Record<string, any>
+  value: any
+  onChange: (value: any) => void
+  property_type: string
+}
+
+export const supportedTags = [
+  {
+    tag: 'TEXTAREA',
+    getter: (value: any) => value || '',
+    component: (props: TagProps) => {
+      const { value, onChange, child_properties, property_type } = props
+      return (
+        <Textarea
+          className="!bg-white !border !border-gray-200"
+          name={props.id}
+          value={value || ''}
+          placeholder={child_properties?.placeholder || ''}
+          onChange={(e) => {
+            onChange(e.target.value)
+          }}
+          disabled={child_properties?.disabled || false}
+          required={child_properties?.required || false}
+        />
+      )
+    },
+  },
+  {
+    tag: 'INPUT',
+    getter: (value: any) => value || '',
+    component: (props: TagProps) => {
+      const { value, onChange, child_properties, property_type } = props
+      const [currentType, setCurrentType] = useState<string>(
+        child_properties?.type || 'text'
+      )
+      
+      useEffect(() => {
+        // Update type when child_properties.type changes
+        if (child_properties?.type && child_properties.type !== currentType) {
+          setCurrentType(child_properties.type)
+        }
+      }, [child_properties?.type, currentType])
+
+      // Log warning for unsupported input types
+      useEffect(() => {
+        const supportedTypes = ['text', 'password', 'email', 'number', 'tel', 'url', 'search', 'range', 'checkbox', 'radio', 'date', 'time', 'datetime-local', 'color']
+        if (currentType && !supportedTypes.includes(currentType)) {
+          console.warn(`Input type '${currentType}' is not fully supported. Fallback to text input.`)
+        }
+      }, [currentType])
+
+      if (currentType === 'checkbox') {
+        return (
+          <div className="flex items-center">
+            <Checkbox
+              checked={!!value}
+              onCheck={() => {
+                onChange(!value)
+              }}
+              disabled={!!child_properties?.disabled}
+            />
+            {child_properties?.label && (
+              <span className="ml-2">{child_properties.label}</span>
+            )}
+          </div>
+        )
+      }
+
+      if (currentType === 'radio') {
+        // Radio should have options property in the format: "option1:Option 1|option2:Option 2|option3:Option 3"
+        const options = (child_properties?.options || '')
+          .split('|')
+          .map((option: string) => {
+            const [value, label] = option.split(':')
+            return { value, label: label || value }
+          })
+          .filter((option: {value: string, label: string}) => option.value)
+
+        if (options.length === 0) {
+          return <div className="text-red-500">Radio options not provided</div>
+        }
+
+        return (
+          <Radio.Group
+            value={value || ''}
+            onChange={onChange}
+            className="block space-y-2 bg-transparent"
+          >
+            {options.map((option: {value: string, label: string}) => (
+              <Radio 
+                key={option.value} 
+                value={option.value}
+                className="flex items-center"
+              >
+                {option.label}
+              </Radio>
+            ))}
+          </Radio.Group>
+        )
+      }
+
+      if (currentType === 'range') {
+        const min = child_properties?.min || 0
+        const max = child_properties?.max || 100
+        const step = child_properties?.step || 1
+        const currentValue = value !== undefined && value !== null ? value : min
+        
+        return (
+          <div className="w-full">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>{min}</span>
+              <span>{max}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                className="w-full"
+                value={currentValue}
+                min={min}
+                max={max}
+                step={step}
+                onChange={(e) => {
+                  onChange(e.target.value)
+                }}
+                disabled={child_properties?.disabled || false}
+              />
+              <span className="text-sm text-gray-700 min-w-[40px]">{currentValue}</span>
+            </div>
+          </div>
+        )
+      }
+      
+      // Date and time inputs
+      if (['date', 'time', 'datetime-local'].includes(currentType)) {
+        return (
+          <input
+            type={currentType}
+            className="block w-full py-2 px-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={value || ''}
+            onChange={(e) => {
+              onChange(e.target.value)
+            }}
+            min={child_properties?.min || ''}
+            max={child_properties?.max || ''}
+            disabled={child_properties?.disabled || false}
+            required={child_properties?.required || false}
+          />
+        )
+      }
+      
+      // Color picker
+      if (currentType === 'color') {
+        return (
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              className="w-10 h-10 p-1 bg-white border border-gray-200 rounded-lg cursor-pointer"
+              value={value || '#000000'}
+              onChange={(e) => {
+                onChange(e.target.value)
+              }}
+              disabled={child_properties?.disabled || false}
+            />
+            <span className="text-sm text-gray-700">{value || '#000000'}</span>
+          </div>
+        )
+      }
+      
+      // Default to text-like inputs
+      return (
+        <Input
+          className="bg-white"
+          id={props.id}
+          name={props.id}
+          type={currentType}
+          value={value || ''}
+          placeholder={child_properties?.placeholder || ''}
+          onChange={(e) => {
+            onChange(e.target.value)
+          }}
+          disabled={child_properties?.disabled || false}
+          required={child_properties?.required || false}
+        />
+      )
+    },
+  },
+  {
+    tag: 'SELECT',
+    getter: (value: any) => value || '',
+    component: (props: TagProps) => {
+      const { value, onChange, child_properties, property_type } = props
+      const [localValue, setLocalValue] = useState(value)
+      const [isOpen, setIsOpen] = useState(false)
+      const dropdownRef = React.useRef<HTMLDivElement>(null)
+      
+      useEffect(() => {
+        setLocalValue(value)
+      }, [value])
+
+      useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+          if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            setIsOpen(false)
+          }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside)
+        }
+      }, [])
+
+      const options = (child_properties?.options || '')
+        .split('|')
+        .map((option: string) => {
+          const [value, label] = option.split(':')
+          return { value, label: label || value }
+        })
+        .filter((option: {value: string, label: string}) => option.value)
+
+      // 确保选项值的唯一性
+      const valueMap = new Map();
+      const hasDuplicates = options.some((opt: {value: string, label: string}) => {
+        if (valueMap.has(opt.value)) return true;
+        valueMap.set(opt.value, true);
+        return false;
+      });
+      
+      const uniqueOptions = hasDuplicates ? 
+        options.map((opt: {value: string, label: string}, index: number) => ({
+          ...opt,
+          uniqueValue: `${opt.value}_${index}`
+        })) : 
+        options.map((opt: {value: string, label: string}) => ({ ...opt, uniqueValue: opt.value }));
+        
+      // 查找当前选中的选项
+      const selectedOption = uniqueOptions.find(
+        (opt: {value: string, label: string, uniqueValue: string}) => 
+          opt.uniqueValue === localValue
+      );
+      
+      const handleSelectOption = (optionValue: string) => {
+        setLocalValue(optionValue);
+        onChange(optionValue);
+        setIsOpen(false);
+      };
+
+      return (
+        <div className="relative w-full" ref={dropdownRef}>
+          {/* 选择框触发器 */}
+          <div 
+            className={`flex items-center justify-between w-full py-2 px-3 bg-white border ${isOpen ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'} rounded-lg cursor-pointer transition-all duration-200 hover:border-gray-300`}
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            <span className={localValue ? 'text-gray-900' : 'text-gray-400'}>
+              {selectedOption ? selectedOption.label : (child_properties?.placeholder || '请选择')}
+            </span>
+            <svg 
+              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+          
+          {/* 下拉选项菜单 */}
+          {isOpen && (
+            <div className="absolute z-10 w-full mt-1 py-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+              {uniqueOptions.map((option: {label: string, uniqueValue: string}) => (
+                <div 
+                  key={option.uniqueValue} 
+                  className={`py-2 px-3 cursor-pointer ${localValue === option.uniqueValue ? 'bg-blue-50 text-blue-600 font-medium' : 'hover:bg-gray-50'} transition-colors duration-150`}
+                  onClick={() => handleSelectOption(option.uniqueValue)}
+                >
+                  {option.label}
+                </div>
+              ))}
+              {uniqueOptions.length === 0 && (
+                <div className="py-2 px-3 text-gray-400 italic">
+                  无可用选项
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    tag: 'SWITCH',
+    getter: (value: any) => !!value,
+    component: (props: TagProps) => {
+      const { value, onChange, child_properties } = props
+      
+      return (
+        <div className="flex items-center">
+          <Switch 
+            defaultValue={!!value}
+            onChange={(checked) => onChange(checked)}
+            disabled={!!child_properties?.disabled}
+          />
+          {child_properties?.label && (
+            <span className="ml-2">{child_properties.label}</span>
+          )}
+        </div>
+      )
+    },
+  },
+  {
+    tag: 'FILE',
+    getter: (value: any) => value || null,
+    component: (props: TagProps) => {
+      const { value, onChange, child_properties } = props
+      const [fileName, setFileName] = useState<string>('')
+      
+      return (
+        <div className="w-full">
+          <div className="flex items-center w-full">
+            <label 
+              className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+            >
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                </svg>
+                <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">点击上传文件</span></p>
+                <p className="text-xs text-gray-500">{child_properties?.accept ? `支持的格式: ${child_properties.accept}` : '支持的格式: 所有文件'}</p>
+              </div>
+              <input 
+                type="file" 
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    setFileName(file.name)
+                    onChange(file)
+                  }
+                }}
+                accept={child_properties?.accept || '*'}
+                disabled={!!child_properties?.disabled}
+                required={!!child_properties?.required}
+              />
+            </label>
+          </div>
+          {fileName && (
+            <div className="mt-2 text-sm text-gray-700">
+              已选择文件: {fileName}
+            </div>
+          )}
+        </div>
+      )
+    },
+  },
+]
+
 const MarkdownForm = ({ node }: any) => {
   const { onSend } = useChatContext()
-
   const [formValues, setFormValues] = useState<{ [key: string]: any }>({})
   const [collapsedItems, setCollapsedItems] = useState<{ [key: string]: boolean }>({})
 
@@ -347,113 +701,27 @@ const MarkdownForm = ({ node }: any) => {
             </label>
           )
         }
-        if (child.tagName === SUPPORTED_TAGS.INPUT && Object.values(SUPPORTED_TYPES).includes(child.properties.type)) {
-          if (child.properties.type === SUPPORTED_TYPES.DATE || child.properties.type === SUPPORTED_TYPES.DATETIME) {
+
+        if (child.tagName === SUPPORTED_TAGS.INPUT) {
+          if (Object.values(SUPPORTED_TYPES).includes(child.properties.type)) {
             return (
-              <DatePicker
-                key={index}
-                value={formValues[child.properties.name]}
-                needTimePicker={child.properties.type === SUPPORTED_TYPES.DATETIME}
-                onChange={(date) => {
-                  setFormValues(prevValues => ({
-                    ...prevValues,
-                    [child.properties.name]: date,
-                  }))
-                }}
-                onClear={() => {
-                  setFormValues(prevValues => ({
-                    ...prevValues,
-                    [child.properties.name]: undefined,
-                  }))
-                }}
-              />
-            )
-          }
-          if (child.properties.type === SUPPORTED_TYPES.TIME) {
-            return (
-              <TimePicker
-                key={index}
-                value={formValues[child.properties.name]}
-                onChange={(time) => {
-                  setFormValues(prevValues => ({
-                    ...prevValues,
-                    [child.properties.name]: time,
-                  }))
-                }}
-                onClear={() => {
-                  setFormValues(prevValues => ({
-                    ...prevValues,
-                    [child.properties.name]: undefined,
-                  }))
-                }}
-              />
-            )
-          }
-          if (child.properties.type === SUPPORTED_TYPES.CHECKBOX) {
-            return (
-              <div className='mt-2 flex items-center h-6 space-x-2' key={index}>
-                <Checkbox
-                  key={index}
-                  checked={formValues[child.properties.name]}
-                  onCheck={() => {
-                    setFormValues(prevValues => ({
-                      ...prevValues,
-                      [child.properties.name]: !prevValues[child.properties.name],
-                    }))
+              <div key={index} className="w-full mb-4">
+                <input
+                  type={child.properties.type}
+                  name={child.properties.name}
+                  id={child.properties.name}
+                  placeholder={child.properties.placeholder}
+                  value={formValues[child.properties.name] || ''}
+                  onChange={(e) => {
+                    handleInputChange(child.properties.name, e.target.value)
                   }}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <span>{child.properties.dataTip || child.properties['data-tip'] || ''}</span>
               </div>
             )
           }
-          if (child.properties.type === SUPPORTED_TYPES.SELECT) {
-            return (
-              <Select
-                key={index}
-                allowSearch={false}
-                className="w-full"
-                items={(() => {
-                  let options = child.properties.dataOptions || child.properties['data-options'] || []
-                  if (typeof options === 'string') {
-                    try {
-                      options = JSON.parse(options)
-                    }
-                    catch (e) {
-                      console.error('Failed to parse options:', e)
-                      options = []
-                    }
-                  }
-                  return options.map((option: string) => ({
-                    name: option,
-                    value: option,
-                  }))
-                })()}
-                defaultValue={formValues[child.properties.name]}
-                onSelect={(item) => {
-                  setFormValues(prevValues => ({
-                    ...prevValues,
-                    [child.properties.name]: item.value,
-                  }))
-                }}
-              />
-            )
-          }
-
-          return (
-            <Input
-              key={index}
-              type={child.properties.type}
-              name={child.properties.name}
-              placeholder={child.properties.placeholder}
-              value={formValues[child.properties.name]}
-              onChange={(e) => {
-                setFormValues(prevValues => ({
-                  ...prevValues,
-                  [child.properties.name]: e.target.value,
-                }))
-              }}
-            />
-          )
+          console.warn(`Unsupported input type: ${child.properties.type}`)
+          return null
         }
         if (child.tagName === SUPPORTED_TAGS.TEXTAREA) {
           return (

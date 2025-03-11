@@ -58,7 +58,7 @@ const translation = {
     processData: '数据处理',
     input: '输入',
     output: '输出',
-    jinjaEditorPlaceholder: '输入 “/” 或 “{” 插入变量',
+    jinjaEditorPlaceholder: '输入 "/" 或 "{" 插入变量',
     viewOnly: '只读',
     showRunHistory: '显示运行历史',
     enableJinja: '开启支持 Jinja 模板',
@@ -106,7 +106,7 @@ const translation = {
     branch: '分支',
     onFailure: '异常时',
     addFailureBranch: '添加异常分支',
-    openInExplore: '在“探索”中打开',
+    openInExplore: '在"探索"中打开',
     loadMore: '加载更多',
     noHistory: '没有历史版本',
   },
@@ -434,8 +434,8 @@ const translation = {
     http: {
       inputVars: '输入变量',
       api: 'API',
-      apiPlaceholder: '输入 URL，输入变量时请键入‘/’',
-      extractListPlaceholder: '输入提取列表编号，输入变量时请键入‘/’',
+      apiPlaceholder: '输入 URL，输入变量时请键入"/"',
+      extractListPlaceholder: '输入提取列表编号，输入变量时请键入"/"',
       notStartWithHttp: 'API 应该以 http:// 或 https:// 开头',
       key: '键',
       type: '类型',
@@ -464,7 +464,7 @@ const translation = {
         'api-key-title': 'API Key',
         'header': 'Header',
       },
-      insertVarPlaceholder: '键入 \'/\' 键快速插入变量',
+      insertVarPlaceholder: '键入 "/" 键快速插入变量',
       timeout: {
         title: '超时设置',
         connectLabel: '连接超时',
@@ -700,6 +700,9 @@ const translation = {
         invalidUrl: '无效的链接',
         bulletList: '列表',
         showAuthor: '显示作者',
+        editMode: '编辑模式',
+        editing: '编辑中',
+        preview: '预览'
       },
     },
     docExtractor: {

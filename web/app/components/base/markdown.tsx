@@ -275,7 +275,7 @@ export function Markdown(props: { content: string; className?: string; customDis
             }
           },
         ]}
-        disallowedElements={['iframe', 'head', 'html', 'meta', 'link', 'style', 'body', ...(props.customDisallowedElements || [])]}
+        disallowedElements={[ ...(props.customDisallowedElements || [])]}
         components={{
           code: CodeBlock,
           img: Img,

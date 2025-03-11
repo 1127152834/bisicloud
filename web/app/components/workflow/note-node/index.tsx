@@ -2,6 +2,7 @@ import {
   memo,
   useCallback,
   useRef,
+  useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useClickAway } from 'ahooks'
@@ -21,6 +22,9 @@ import { THEME_MAP } from './constants'
 import { useNote } from './hooks'
 import type { NoteNodeType } from './types'
 import cn from '@/utils/classnames'
+import { Markdown } from '@/app/components/base/markdown'
+import { Edit04 } from '@/app/components/base/icons/src/vender/line/general'
+import Button from '@/app/components/base/button'
 
 const Icon = () => {
   return (
@@ -38,6 +42,30 @@ const NoteNode = ({
   const controlPromptEditorRerenderKey = useStore(s => s.controlPromptEditorRerenderKey)
   const ref = useRef<HTMLDivElement | null>(null)
   const theme = data.theme
+
+  // Parse the text content if it's JSON
+  const getMarkdownContent = useCallback((text: string) => {
+    try {
+      const parsed = JSON.parse(text)
+      // If it's a Lexical editor state, try to extract the text content
+      if (parsed.root?.children) {
+        return parsed.root.children
+          .map((node: any) => {
+            if (node.type === 'paragraph' && node.children) {
+              return node.children
+                .map((child: any) => child.text || '')
+                .join('')
+            }
+            return ''
+          })
+          .join('\n')
+      }
+      return text
+    } catch {
+      return text
+    }
+  }, [])
+
   const {
     handleThemeChange,
     handleEditorChange,
@@ -54,7 +82,15 @@ const NoteNode = ({
     handleNodeDelete(id)
   }, [id, handleNodeDelete])
 
+  const handleEditToggle = useCallback(() => {
+    handleNodeDataUpdateWithSyncDraft({ id, data: { isEditing: !data.isEditing } })
+  }, [id, data.isEditing, handleNodeDataUpdateWithSyncDraft])
+
+  // Handle click outside of editor to exit edit mode
   useClickAway(() => {
+    if (data.isEditing) {
+      handleNodeDataUpdateWithSyncDraft({ id, data: { isEditing: false } })
+    }
     handleNodeDataUpdateWithSyncDraft({ id, data: { selected: false } })
   }, ref)
 
@@ -83,11 +119,12 @@ const NoteNode = ({
             minWidth={240}
             minHeight={88}
           />
-          <div
-            className={cn(
-              'shrink-0 h-2 opacity-50 rounded-t-md',
-              THEME_MAP[theme].title,
-            )}></div>
+          <div className={cn(
+            'shrink-0 h-8 opacity-50 rounded-t-md flex items-center px-3',
+            THEME_MAP[theme].title,
+          )}>
+            <div className="text-xs text-gray-500">Markdown Note</div>
+          </div>
           {
             data.selected && (
               <div className='absolute top-[-41px] left-1/2 -translate-x-1/2'>
@@ -99,19 +136,29 @@ const NoteNode = ({
                   onDelete={handleDeleteNode}
                   showAuthor={data.showAuthor}
                   onShowAuthorChange={handleShowAuthorChange}
+                  isEditing={data.isEditing}
+                  onEditingChange={handleEditToggle}
                 />
               </div>
             )
           }
           <div className='grow px-3 py-2.5 overflow-y-auto'>
             <div className={cn(
-              data.selected && 'nodrag nopan nowheel cursor-text',
+              'h-full flex flex-col',
+              data.selected && data.isEditing && 'nodrag nopan nowheel cursor-text',
             )}>
-              <NoteEditor
-                containerElement={ref.current}
-                placeholder={t('workflow.nodes.note.editor.placeholder') || ''}
-                onChange={handleEditorChange}
-              />
+              {data.isEditing ? (
+                <NoteEditor
+                  containerElement={ref.current}
+                  placeholder={t('workflow.nodes.note.editor.placeholder') || ''}
+                  onChange={handleEditorChange}
+                  value={data.text}
+                />
+              ) : (
+                <div className="relative markdown-body prose prose-sm max-w-none prose-headings:mt-0 prose-headings:mb-3 prose-p:my-2 prose-p:leading-normal prose-pre:my-2 prose-ul:my-2 prose-ul:leading-normal">
+                  <Markdown content={getMarkdownContent(data.text || '')} />
+                </div>
+              )}
             </div>
           </div>
           {

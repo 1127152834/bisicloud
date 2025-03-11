@@ -399,7 +399,7 @@ const translation = {
       roleDescription: {
         system: 'Give high level instructions for the conversation',
         user: 'Provide instructions, queries, or any text-based input to the model',
-        assistant: 'The model’s responses  based on the user messages',
+        assistant: 'The model\'s responses based on the user messages',
       },
       addMessage: 'Add Message',
       vision: 'vision',
@@ -433,8 +433,8 @@ const translation = {
     http: {
       inputVars: 'Input Variables',
       api: 'API',
-      apiPlaceholder: 'Enter URL, type ‘/’ insert variable',
-      extractListPlaceholder: 'Enter list item index, type ‘/’ insert variable',
+      apiPlaceholder: 'Enter URL, type \'/\' to insert variable',
+      extractListPlaceholder: 'Enter list item index, type \'/\' to insert variable',
       notStartWithHttp: 'API should start with http:// or https://',
       key: 'Key',
       type: 'Type',
@@ -699,6 +699,13 @@ const translation = {
         invalidUrl: 'Invalid URL',
         bulletList: 'Bullet List',
         showAuthor: 'Show Author',
+        editMode: 'Edit Mode',
+        editing: 'Editing',
+        preview: 'Preview',
+        assistant: 'The model\'s responses based on the user messages',
+        apiPlaceholder: 'Enter URL, type \'/\' to insert variable',
+        extractListPlaceholder: 'Enter list item index, type \'/\' to insert variable',
+        insertVarPlaceholder: 'type \'/\' to insert variable'
       },
     },
     docExtractor: {

@@ -7,7 +7,11 @@ import Command from './command'
 import type { OperatorProps } from './operator'
 import Operator from './operator'
 
-type ToolbarProps = ColorPickerProps & OperatorProps
+export type ToolbarProps = ColorPickerProps & Omit<OperatorProps, 'isEditing' | 'onEditingChange'> & {
+  isEditing?: boolean
+  onEditingChange?: () => void
+}
+
 const Toolbar = ({
   theme,
   onThemeChange,
@@ -16,6 +20,8 @@ const Toolbar = ({
   onDelete,
   showAuthor,
   onShowAuthorChange,
+  isEditing,
+  onEditingChange,
 }: ToolbarProps) => {
   return (
     <div className='inline-flex items-center p-0.5 bg-components-actionbar-bg rounded-lg border-[0.5px] border-components-actionbar-border shadow-sm'>
@@ -40,6 +46,8 @@ const Toolbar = ({
         onDelete={onDelete}
         showAuthor={showAuthor}
         onShowAuthorChange={onShowAuthorChange}
+        isEditing={isEditing}
+        onEditingChange={onEditingChange}
       />
     </div>
   )

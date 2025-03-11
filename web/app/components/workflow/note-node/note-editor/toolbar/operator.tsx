@@ -19,13 +19,18 @@ export type OperatorProps = {
   onDelete: () => void
   showAuthor: boolean
   onShowAuthorChange: (showAuthor: boolean) => void
+  isEditing?: boolean
+  onEditingChange?: () => void
 }
+
 const Operator = ({
   onCopy,
   onDelete,
   onDuplicate,
   showAuthor,
   onShowAuthorChange,
+  isEditing = false,
+  onEditingChange,
 }: OperatorProps) => {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -82,6 +87,23 @@ const Operator = ({
                 size='l'
                 defaultValue={showAuthor}
                 onChange={onShowAuthorChange}
+              />
+            </div>
+            <div
+              className='flex items-center justify-between px-3 h-8 cursor-pointer rounded-md text-sm text-text-secondary hover:bg-state-base-hover'
+              onClick={e => {
+                e.stopPropagation()
+                onEditingChange?.()
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span>{t('workflow.nodes.note.editor.editMode')}</span>
+                <span className="text-xs text-gray-500">({isEditing ? t('workflow.nodes.note.editor.editing') : t('workflow.nodes.note.editor.preview')})</span>
+              </div>
+              <Switch
+                size='l'
+                defaultValue={isEditing}
+                onChange={onEditingChange}
               />
             </div>
           </div>

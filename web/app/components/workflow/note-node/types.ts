@@ -14,4 +14,5 @@ export type NoteNodeType = CommonNodeType & {
   theme: NoteTheme
   author: string
   showAuthor: boolean
+  isEditing: boolean
 }
