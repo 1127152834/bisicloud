@@ -418,10 +418,12 @@ x-shared-env: &shared-api-worker-env
   PIP_MIRROR_URL: ${PIP_MIRROR_URL:-}
 
   MODEL_HOME: ${MODEL_HOME:-E:\xinfrence-models}
+
+version: '3.8'
+
 services:
   # API service
   api:
-    image: langgenius/dify-api:1.0.0
     build:
       context: ../api
       dockerfile: Dockerfile
@@ -458,7 +460,6 @@ services:
   # worker service
   # The Celery worker for processing the queue.
   worker:
-    image: langgenius/dify-api:1.0.0
     build:
       context: ../api
       dockerfile: Dockerfile
@@ -492,7 +493,6 @@ services:
 
   # Frontend web application.
   web:
-    image: langgenius/dify-web:1.0.0
     build:
       context: ../web
       dockerfile: Dockerfile
@@ -533,6 +533,8 @@ services:
       interval: 1s
       timeout: 3s
       retries: 30
+    ports:
+      - '${EXPOSE_DB_PORT:-5432}:5432'
 
   # The redis cache.
   redis:
@@ -1084,6 +1086,62 @@ services:
   #     - XINFERENCE_HOME=/root/.xinference
   #     - HF_ENDPOINT=https://hf-mirror.com
 
+  gpustack:
+    image: gpustack/gpustack
+    container_name: gpustack
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "${GPUSTACK_PORT:-80}:80"
+      - "${GPUSTACK_WORKER_PORT:-10150}:10150"
+      - "${GPUSTACK_RANGE_START:-40000}-${GPUSTACK_RANGE_END:-41024}:40000-41024"
+      - "${GPUSTACK_RANGE_START_2:-50000}-${GPUSTACK_RANGE_END_2:-51024}:50000-51024"
+    volumes:
+      - ${GPUSTACK_DATA_PATH:-./volumes/gpustack}:/var/lib/gpustack
+    ipc: host
+    environment:
+      - TZ=Asia/Shanghai
+      - HOST_IP=${HOST_IP:-localhost}
+    command:
+      - "--worker-ip=${HOST_IP:-localhost}"
+
+  # 可选：如果你想分离 worker，可以添加以下服务
+  # gpustack-worker:
+  #   image: gpustack/gpustack
+  #   container_name: gpustack-worker
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+  #   ports:
+  #     - "${GPUSTACK_WORKER_PORT_2:-10150}:10150"
+  #     - "${GPUSTACK_RANGE_START_3:-40100}-${GPUSTACK_RANGE_END_3:-41124}:40000-41024"
+  #     - "${GPUSTACK_RANGE_START_4:-50100}-${GPUSTACK_RANGE_END_4:-51124}:50000-51024"
+  #   volumes:
+  #     - ${GPUSTACK_WORKER_DATA_PATH:-./volumes/gpustack-worker}:/var/lib/gpustack
+  #   ipc: host
+  #   environment:
+  #     - TZ=Asia/Shanghai
+  #     - HOST_IP=${HOST_IP:-localhost}
+  #     - WORKER_IP=${WORKER_IP:-localhost}
+  #     - GPUSTACK_TOKEN=${GPUSTACK_TOKEN}
+  #   command:
+  #     - "--server-url=http://${HOST_IP:-localhost}"
+  #     - "--token=${GPUSTACK_TOKEN}"
+  #     - "--worker-ip=${WORKER_IP:-localhost}"
+  #   depends_on:
+  #     - gpustack
+
 networks:
   # create a network between sandbox, api and ssrf_proxy, and can not access outside.
   ssrf_proxy_network:
@@ -1098,3 +1156,5 @@ networks:
 volumes:
   oradata:
   dify_es01_data:
+  gpustack-data:
+  gpustack-worker-data:

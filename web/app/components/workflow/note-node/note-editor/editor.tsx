@@ -3,9 +3,7 @@
 import {
   memo,
   useCallback,
-  useEffect,
 } from 'react'
-import type { EditorProps as MonacoEditorProps } from '@monaco-editor/react'
 import { useWorkflowHistoryStore } from '../../workflow-history-store'
 import dynamic from 'next/dynamic'
 
@@ -32,23 +30,7 @@ const Editor = ({
   }, [onChange])
 
   return (
-<<<<<<< Updated upstream
-    <div className='relative'>
-      <RichTextPlugin
-        contentEditable={
-          <div>
-            <ContentEditable
-              onFocus={() => setShortcutsEnabled(false)}
-              onBlur={() => setShortcutsEnabled(true)}
-              spellCheck={false}
-              className='w-full h-full outline-none text-text-secondary caret-primary-600'
-            />
-          </div>
-        }
-        placeholder={<Placeholder value={placeholder} compact />}
-        ErrorBoundary={LexicalErrorBoundary}
-=======
-    <div className='relative h-full min-h-[200px] flex-grow bg-white/50 rounded'>
+    <div className='relative h-full min-h-[200px] grow bg-white/50 rounded'>
       <MonacoEditor
         height="100%"
         defaultLanguage="markdown"
@@ -72,8 +54,8 @@ const Editor = ({
               'editor.lineHighlightBackground': '#ffffff20',
               'editorLineNumber.foreground': '#237893',
               'editor.selectionBackground': '#ADD6FF80',
-              'editor.inactiveSelectionBackground': '#E5EBF1'
-            }
+              'editor.inactiveSelectionBackground': '#E5EBF1',
+            },
           })
         }}
         onMount={(editor) => {
@@ -81,7 +63,7 @@ const Editor = ({
           editor.setValue(value || '') // Set initial value
           editor.onDidFocusEditorText(() => setShortcutsEnabled(false))
           editor.onDidBlurEditorText(() => setShortcutsEnabled(true))
-          
+
           // Force layout update after mount
           setTimeout(() => {
             editor.layout()
@@ -105,9 +87,8 @@ const Editor = ({
           suggestOnTriggerCharacters: false,
           acceptSuggestionOnEnter: 'off',
           tabSize: 2,
-          padding: { top: 8, bottom: 8 }
+          padding: { top: 8, bottom: 8 },
         }}
->>>>>>> Stashed changes
       />
     </div>
   )
